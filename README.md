@@ -6,9 +6,9 @@ These links stay the same and always lead to the latest regular release. [Versio
 
 ## What is available now
 
-Optional company/person details and connections in a restrained Codex-inspired desktop shell. Sign in through installed official Codex or Claude Code clients, or use OpenAI/Anthropic API keys and local-server connections. Connection keys use OS-protected storage. All connections can be skipped. The bottom-left profile icon opens the name/settings menu. The name and gear open the same Settings dialog, with separate Profile and Connections sections. Agent execution is not included in this stage.
+Optional company/person details and connections in a restrained Codex-inspired desktop shell. Sign in through installed official Codex or Claude Code clients, or use OpenAI/Anthropic API keys and local-server connections. Connection keys use OS-protected storage. All connections can be skipped. The clear profile bubble at the bottom left opens Profile, Usage and Settings. Settings is a full view with General, Profile, Appearance, Connections and Usage. Theme, reduced motion, sidebar visibility and automatic update downloading are functional preferences. Usage displays shared Codex account limits through its installed official client, when available; missing limits are not shown as zero. Agent execution is not included in this stage.
 
-The app detects updates in the background on launch and while running. A small blue action appears at the lower left when an update is available, with a ring and short progress tooltip during download. On Windows/Linux, clicking it downloads and applies the update with a restart. Linux updating requires running the AppImage. macOS currently uses a downloaded installer until Apple signing is configured.
+The app detects updates in the background on launch and while running. A small blue action appears at the lower left when an update is available, with the actual percentage inside the centered progress ring during download and a short action tooltip. On Windows/Linux, clicking it downloads and applies the update with a restart. Linux updating requires running the AppImage. macOS currently uses a downloaded installer until Apple signing is configured.
 
 ## Install
 
