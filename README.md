@@ -1,23 +1,23 @@
 # Proactive Agent Workforce — desktop downloads
 
-[Windows x64](https://github.com/teydra/proactive-agent-workforce-releases/releases/latest/download/workforce-windows-x64.exe) · [Linux x64](https://github.com/teydra/proactive-agent-workforce-releases/releases/latest/download/workforce-linux-x64.AppImage) · [macOS Intel + Apple Silicon](https://github.com/teydra/proactive-agent-workforce-releases/releases/latest/download/workforce-mac-universal.dmg)
+[Windows x64 — 0.1.8](https://github.com/teydra/proactive-agent-workforce-releases/releases/latest/download/workforce-windows-x64.exe) · [Linux x64 — 0.1.7](https://github.com/teydra/proactive-agent-workforce-releases/releases/latest/download/workforce-linux-x64.AppImage) · [macOS Intel + Apple Silicon — 0.1.7](https://github.com/teydra/proactive-agent-workforce-releases/releases/latest/download/workforce-mac-universal.dmg)
 
-These links stay the same and always lead to the latest regular release. [Version metadata](https://github.com/teydra/proactive-agent-workforce-releases/releases/latest/download/release.json) · [All versions and release notes](https://github.com/teydra/proactive-agent-workforce-releases/releases)
+The stable links remain unchanged. This release updates Windows; Linux/macOS retain the byte-identical previously verified 0.1.7 packages and update manifests. Native CI runners could not start, so no new Linux/macOS build is claimed. [Version metadata](https://github.com/teydra/proactive-agent-workforce-releases/releases/latest/download/release.json) · [All versions and notes](https://github.com/teydra/proactive-agent-workforce-releases/releases)
 
-## What is available now
+## Windows 0.1.8
 
-Desktop 0.1.7 adds multiple chats per agent, searchable single/multiple agent selection and editable chat membership. Chat details open from the top header; the avatar opens agent details and model preferences. A compact growing composer includes text/code file insertion, optional configured speech transcription and optional reading of new replies. Copy icons sit below messages. Group replies are selected manually; full live voice and cross-chat memory remain open.
+One readable Agents list contains independently named conversations. Plus attaches files or folders as removable files, with text/image/readable-PDF previews. Chat details open from the top name; avatars open agent details. Installed signed-in Codex models supply real conversational replies through the official client. API/local model connections remain available. Setup includes a product guide, editable prompt and actual configuration facts.
 
-Optional company/person details and connections in a restrained Codex-inspired desktop shell. Sign in through installed official Codex or Claude Code clients, or use OpenAI/Anthropic API keys and local-server connections. Connection keys use OS-protected storage. All connections can be skipped. The clear profile bubble at the bottom left opens Profile, Usage and Settings. Settings is a full view with General, Profile, Appearance, Connections and Usage. Theme, reduced motion, sidebar visibility and automatic update downloading are functional preferences. Usage displays shared Codex account limits through its installed official client, when available; missing limits are not shown as zero. Text conversations now use explicitly selected API/local models, with saved drafts, history, stop and retry. Autonomous tasks/tools and native subscription inference are not included.
+With an empty composer, the primary button starts/ends a listening conversation; content uses that same position for Send. Windows can use installed local speech recognition, or a configured transcription service. The selected text model responds through the system voice, then listening resumes. This is one half-duplex session, bound to its original chat during navigation. Dictation remains a separate editable-draft action using configured transcription. Native Codex realtime audio requires separate API authentication. Group replies are manually selected; autonomous tasks/tools, shared cross-chat memory and parallel voice sessions remain open.
 
-The app detects updates in the background on launch and while running. A small blue action appears at the lower left when an update is available, with the actual percentage inside the centered progress ring during download and a short action tooltip. On Windows/Linux, clicking it downloads and applies the update with a restart. Linux updating requires running the AppImage. macOS currently uses a downloaded installer until Apple signing is configured.
+Profile Usage preserves actual remaining quotas and reset times. The Claude install action uses the official installer. TeleCoding detects its existing local host and shows its actual status/QR. Logins remain in the official clients; API keys use OS-protected storage. All connections and company/person setup are optional.
 
-## Install
+Windows verification: 72 functional tests, four packaged-window suites, runtime/source byte verification and a real Codex reply from the packaged app. Linux/macOS 0.1.7 retain their earlier native build/window checks.
 
-- **Windows:** run the installer. It installs for your user and offers a desktop shortcut.
-- **Linux:** make the AppImage executable and run it. If FUSE is unavailable, its `--appimage-extract-and-run` option is supported.
-- **macOS:** open the universal DMG and copy the application into Applications.
+## Install and update
 
-Initial installers are not publisher-signed/notarized. Normal OS trust checks may therefore require review; production signing is still open work. Use this repository's release files and included checksums. Further architectures and distributions are not yet verified.
+- **Windows:** run the installer for your user; a desktop shortcut is available. The small blue update action above the profile downloads and applies an available update.
+- **Linux:** make the AppImage executable and run it; `--appimage-extract-and-run` is available without FUSE. No new Linux version is offered by this release.
+- **macOS:** open the universal DMG and copy the app to Applications. Updates use a downloaded installer until Apple signing is configured.
 
-This repository hosts public binaries and release information. Private project conversations, credentials and research are not published here.
+Installers are not publisher-signed/notarized. Use this repository's release files and included checksums. Private project conversations, credentials and research are not published here.
