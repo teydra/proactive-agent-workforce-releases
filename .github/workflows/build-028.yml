@@ -11,8 +11,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-24.04
-            arguments: --linux --x64
+          - os: windows-2025
+            arguments: --win --x64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     steps:
@@ -24,10 +24,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download v0.2.8 --repo $env:GITHUB_REPOSITORY --pattern compiled-release-payload-r2.zip --dir $env:RUNNER_TEMP
+          gh release download v0.2.8 --repo $env:GITHUB_REPOSITORY --pattern compiled-release-payload-r3.zip --dir $env:RUNNER_TEMP
           if ($LASTEXITCODE) { throw 'Draft download failed' }
-          $payload = Join-Path $env:RUNNER_TEMP compiled-release-payload-r2.zip
-          if ((Get-FileHash -LiteralPath $payload -Algorithm SHA256).Hash.ToLowerInvariant() -ne '7fabc0d5d3fcfc7bdbfcc74ff155064628ee524f4a49395b7a8a7bed4affd256') { throw 'Payload integrity mismatch' }
+          $payload = Join-Path $env:RUNNER_TEMP compiled-release-payload-r3.zip
+          if ((Get-FileHash -LiteralPath $payload -Algorithm SHA256).Hash.ToLowerInvariant() -ne '4977de05ed24b71a907b94ef95cb3706ff138f864036d6486a2cbcc75fb2d43f') { throw 'Payload integrity mismatch' }
           Expand-Archive -LiteralPath $payload -DestinationPath .
       - name: Install the pinned package dependencies
         run: npm ci --no-fund --no-audit
@@ -50,6 +50,12 @@ jobs:
       - name: Verify packaged runtime and desktop on Windows and macOS
         if: runner.os != 'Linux'
         run: node scripts/native-release-check.cjs
+      - name: Record Windows publisher signature status
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $signature = Get-AuthenticodeSignature -LiteralPath dist/workforce-windows-x64.exe
+          @{ status = $signature.Status.ToString(); publisher = $signature.SignerCertificate.Subject } | ConvertTo-Json | Set-Content -LiteralPath test-results/native-windows-trust.json
       - name: Save tested packages in the unpublished draft
         shell: pwsh
         env:
