@@ -1,0 +1,95 @@
+name: Linux package 0.2.8 with secure desktop storage
+on:
+  push:
+    paths: ['.github/workflows/linux-028.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arguments: --linux --x64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.22.2'
+      - name: Read the compiled release payload from the private draft
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v0.2.8 --repo $env:GITHUB_REPOSITORY --pattern compiled-release-payload-r5.zip --dir $env:RUNNER_TEMP
+          if ($LASTEXITCODE) { throw 'Draft download failed' }
+          $payload = Join-Path $env:RUNNER_TEMP compiled-release-payload-r5.zip
+          if ((Get-FileHash -LiteralPath $payload -Algorithm SHA256).Hash.ToLowerInvariant() -ne '7ab7afca2516cedfa0452372ec5aec928d2306d220a2c5e26fdcb4c931db0531') { throw 'Payload integrity mismatch' }
+          Expand-Archive -LiteralPath $payload -DestinationPath .
+      - name: Install the pinned package dependencies
+        run: npm ci --no-fund --no-audit
+      - name: Prepare both macOS native architectures
+        if: runner.os == 'macOS'
+        run: node scripts/prepare-macos-addons.mjs
+      - name: Package the compiled application
+        run: npm run package -- ${{ matrix.arguments }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Install the desktop secret service on the disposable CI host
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gnome-keyring libsecret-1-0
+      - name: Configure the normal Chromium sandbox on the disposable Linux host
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo chown root:root dist/linux-unpacked/chrome-sandbox
+          sudo chmod 4755 dist/linux-unpacked/chrome-sandbox
+      - name: Verify packaged runtime and desktop on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          xvfb-run -a dbus-run-session -- bash -euo pipefail -c '
+            export XDG_CURRENT_DESKTOP=GNOME
+            eval "$(gnome-keyring-daemon --start --components=secrets)"
+            task_ci_keyring_password=$(openssl rand -hex 32)
+            printf "%s" "$task_ci_keyring_password" | gnome-keyring-daemon --unlock --components=secrets
+            unset task_ci_keyring_password
+            node scripts/native-release-check.cjs
+          '
+      - name: Verify packaged runtime and desktop on Windows and macOS
+        if: runner.os != 'Linux'
+        run: node scripts/native-release-check.cjs
+      - name: Record Windows publisher signature status
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $signature = Get-AuthenticodeSignature -LiteralPath dist/workforce-windows-x64.exe
+          @{ status = $signature.Status.ToString(); publisher = $signature.SignerCertificate.Subject } | ConvertTo-Json | Set-Content -LiteralPath test-results/native-windows-trust.json
+      - name: Save tested packages in the unpublished draft
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $assets = @(Get-ChildItem -LiteralPath dist -File | Where-Object { $_.Name -match '\.(exe|AppImage|dmg|zip)(\.blockmap)?$|^latest(-linux|-mac)?\.yml$' })
+          $assets += @(Get-ChildItem -Path test-results/native-* -File)
+          $uploadArgs = @('release', 'upload', 'v0.2.8', '--repo', $env:GITHUB_REPOSITORY, '--clobber') + @($assets.FullName)
+          & gh @uploadArgs
+          if ($LASTEXITCODE) { throw 'Draft upload failed' }
+      - name: Save isolated test diagnostics after a failure
+        if: failure()
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $files = @(Get-ChildItem -Path test-results/native-*-failure.* -File -ErrorAction SilentlyContinue)
+          if ($files.Count) {
+            $uploadArgs = @('release', 'upload', 'v0.2.8', '--repo', $env:GITHUB_REPOSITORY, '--clobber') + @($files.FullName)
+            & gh @uploadArgs
+            if ($LASTEXITCODE) { throw 'Diagnostic upload failed' }
+          }

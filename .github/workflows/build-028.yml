@@ -1,7 +1,5 @@
 name: Native packages 0.2.8
 on:
-  push:
-    paths: ['.github/workflows/build-028.yml']
   workflow_dispatch:
 permissions:
   contents: write
