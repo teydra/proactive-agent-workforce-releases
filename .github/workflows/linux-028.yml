@@ -24,10 +24,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download v0.2.8 --repo $env:GITHUB_REPOSITORY --pattern compiled-release-payload-r5.zip --dir $env:RUNNER_TEMP
+          gh release download v0.2.8 --repo $env:GITHUB_REPOSITORY --pattern compiled-release-payload-r6.zip --dir $env:RUNNER_TEMP
           if ($LASTEXITCODE) { throw 'Draft download failed' }
-          $payload = Join-Path $env:RUNNER_TEMP compiled-release-payload-r5.zip
-          if ((Get-FileHash -LiteralPath $payload -Algorithm SHA256).Hash.ToLowerInvariant() -ne '7ab7afca2516cedfa0452372ec5aec928d2306d220a2c5e26fdcb4c931db0531') { throw 'Payload integrity mismatch' }
+          $payload = Join-Path $env:RUNNER_TEMP compiled-release-payload-r6.zip
+          if ((Get-FileHash -LiteralPath $payload -Algorithm SHA256).Hash.ToLowerInvariant() -ne '0f67748844ce691baa27708ba99b10c4252be8be40bd756956f85de39dba479c') { throw 'Payload integrity mismatch' }
           Expand-Archive -LiteralPath $payload -DestinationPath .
       - name: Install the pinned package dependencies
         run: npm ci --no-fund --no-audit
@@ -43,7 +43,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends gnome-keyring libsecret-1-0
+          sudo apt-get install -y --no-install-recommends gnome-keyring libsecret-1-0 libsecret-tools
       - name: Configure the normal Chromium sandbox on the disposable Linux host
         if: runner.os == 'Linux'
         shell: bash
@@ -56,10 +56,11 @@ jobs:
         run: |
           xvfb-run -a dbus-run-session -- bash -euo pipefail -c '
             export XDG_CURRENT_DESKTOP=GNOME
-            eval "$(gnome-keyring-daemon --start --components=secrets)"
+            export GNOME_KEYRING_CONTROL=$(mktemp -d)
             task_ci_keyring_password=$(openssl rand -hex 32)
-            printf "%s" "$task_ci_keyring_password" | gnome-keyring-daemon --unlock --components=secrets
+            printf "%s" "$task_ci_keyring_password" | gnome-keyring-daemon --daemonize --unlock --components=secrets --control-directory="$GNOME_KEYRING_CONTROL"
             unset task_ci_keyring_password
+            printf "%s" test-only-keyring-check | timeout 20 secret-tool store --label=Workforce-CI-Check app workforce-release-ci
             node scripts/native-release-check.cjs
           '
       - name: Verify packaged runtime and desktop on Windows and macOS
