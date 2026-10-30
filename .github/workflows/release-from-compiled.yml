@@ -1,18 +1,36 @@
-name: Linux package 0.2.8 with secure desktop storage
+name: Desktop release from a compiled snapshot
 on:
-  push:
-    paths: ['.github/workflows/linux-028.yml']
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing unpublished draft tag (vX.Y.Z)
+        type: string
+        required: true
+      payload:
+        description: Compiled ZIP asset in that draft; no raw product sources
+        type: string
+        required: true
+      sha256:
+        description: SHA256 of that exact compiled ZIP
+        type: string
+        required: true
+      platform:
+        description: Platform to build; the publisher retains other platform files
+        type: choice
+        options: [windows, linux, mac, all]
+        default: windows
 permissions:
   contents: write
+env:
+  RELEASE_TAG: ${{ inputs.tag }}
+  RELEASE_PAYLOAD: ${{ inputs.payload }}
+  RELEASE_PAYLOAD_SHA256: ${{ inputs.sha256 }}
 jobs:
   package:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-24.04
-            arguments: --linux --x64
+        include: ${{ fromJSON(inputs.platform == 'windows' && '[{"os":"windows-2025","arguments":"--win --x64"}]' || inputs.platform == 'linux' && '[{"os":"ubuntu-24.04","arguments":"--linux --x64"}]' || inputs.platform == 'mac' && '[{"os":"macos-15","arguments":"--mac --universal"}]' || '[{"os":"windows-2025","arguments":"--win --x64"},{"os":"ubuntu-24.04","arguments":"--linux --x64"},{"os":"macos-15","arguments":"--mac --universal"}]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     steps:
@@ -24,11 +42,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download v0.2.8 --repo $env:GITHUB_REPOSITORY --pattern compiled-release-payload-r6.zip --dir $env:RUNNER_TEMP
+          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') { throw 'Use a vX.Y.Z draft tag' }
+          if ($env:RELEASE_PAYLOAD -notmatch '^compiled-[a-zA-Z0-9._-]+\.zip$') { throw 'Use a compiled payload filename' }
+          if ($env:RELEASE_PAYLOAD_SHA256 -notmatch '^[a-fA-F0-9]{64}$') { throw 'Use a SHA256 digest' }
+          $draft = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isDraft | ConvertFrom-Json
+          if ($LASTEXITCODE -or -not $draft.isDraft) { throw 'Only unpublished drafts may be built or changed' }
+          gh release download $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --pattern $env:RELEASE_PAYLOAD --dir $env:RUNNER_TEMP
           if ($LASTEXITCODE) { throw 'Draft download failed' }
-          $payload = Join-Path $env:RUNNER_TEMP compiled-release-payload-r6.zip
-          if ((Get-FileHash -LiteralPath $payload -Algorithm SHA256).Hash.ToLowerInvariant() -ne '0f67748844ce691baa27708ba99b10c4252be8be40bd756956f85de39dba479c') { throw 'Payload integrity mismatch' }
+          $payload = Join-Path $env:RUNNER_TEMP $env:RELEASE_PAYLOAD
+          if ((Get-FileHash -LiteralPath $payload -Algorithm SHA256).Hash.ToLowerInvariant() -ne $env:RELEASE_PAYLOAD_SHA256) { throw 'Payload integrity mismatch' }
           Expand-Archive -LiteralPath $payload -DestinationPath .
+          if ((Get-Content package.json -Raw | ConvertFrom-Json).version -ne $env:RELEASE_TAG.Substring(1)) { throw 'Package and draft versions differ' }
       - name: Install the pinned package dependencies
         run: npm ci --no-fund --no-audit
       - name: Prepare both macOS native architectures
@@ -77,9 +101,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          $draft = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isDraft | ConvertFrom-Json
+          if ($LASTEXITCODE -or -not $draft.isDraft) { throw 'Refusing to overwrite a published release' }
           $assets = @(Get-ChildItem -LiteralPath dist -File | Where-Object { $_.Name -match '\.(exe|AppImage|dmg|zip)(\.blockmap)?$|^latest(-linux|-mac)?\.yml$' })
           $assets += @(Get-ChildItem -Path test-results/native-* -File)
-          $uploadArgs = @('release', 'upload', 'v0.2.8', '--repo', $env:GITHUB_REPOSITORY, '--clobber') + @($assets.FullName)
+          $uploadArgs = @('release', 'upload', $env:RELEASE_TAG, '--repo', $env:GITHUB_REPOSITORY, '--clobber') + @($assets.FullName)
           & gh @uploadArgs
           if ($LASTEXITCODE) { throw 'Draft upload failed' }
       - name: Save isolated test diagnostics after a failure
@@ -90,7 +116,7 @@ jobs:
         run: |
           $files = @(Get-ChildItem -Path test-results/native-*-failure.* -File -ErrorAction SilentlyContinue)
           if ($files.Count) {
-            $uploadArgs = @('release', 'upload', 'v0.2.8', '--repo', $env:GITHUB_REPOSITORY, '--clobber') + @($files.FullName)
+            $uploadArgs = @('release', 'upload', $env:RELEASE_TAG, '--repo', $env:GITHUB_REPOSITORY, '--clobber') + @($files.FullName)
             & gh @uploadArgs
             if ($LASTEXITCODE) { throw 'Diagnostic upload failed' }
           }
