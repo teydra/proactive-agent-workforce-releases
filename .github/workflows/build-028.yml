@@ -11,12 +11,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-2025
-            arguments: --win --x64
           - os: ubuntu-24.04
             arguments: --linux --x64
-          - os: macos-15
-            arguments: --mac --universal
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     steps:
@@ -28,10 +24,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download v0.2.8 --repo $env:GITHUB_REPOSITORY --pattern compiled-release-payload.zip --dir $env:RUNNER_TEMP
+          gh release download v0.2.8 --repo $env:GITHUB_REPOSITORY --pattern compiled-release-payload-r2.zip --dir $env:RUNNER_TEMP
           if ($LASTEXITCODE) { throw 'Draft download failed' }
-          $payload = Join-Path $env:RUNNER_TEMP compiled-release-payload.zip
-          if ((Get-FileHash -LiteralPath $payload -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'd862052ae2de89b692821888a42ed8e3b90107c03c498134d87a9f06d385f775') { throw 'Payload integrity mismatch' }
+          $payload = Join-Path $env:RUNNER_TEMP compiled-release-payload-r2.zip
+          if ((Get-FileHash -LiteralPath $payload -Algorithm SHA256).Hash.ToLowerInvariant() -ne '7fabc0d5d3fcfc7bdbfcc74ff155064628ee524f4a49395b7a8a7bed4affd256') { throw 'Payload integrity mismatch' }
           Expand-Archive -LiteralPath $payload -DestinationPath .
       - name: Install the pinned package dependencies
         run: npm ci --no-fund --no-audit
