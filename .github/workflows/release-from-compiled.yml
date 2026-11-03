@@ -94,7 +94,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $signature = Get-AuthenticodeSignature -LiteralPath dist/workforce-windows-x64.exe
+          $signature = Get-AuthenticodeSignature -LiteralPath dist/autark-windows-x64.exe
           @{ status = $signature.Status.ToString(); publisher = $signature.SignerCertificate.Subject } | ConvertTo-Json | Set-Content -LiteralPath test-results/native-windows-trust.json
       - name: Save tested packages in the unpublished draft
         shell: pwsh
